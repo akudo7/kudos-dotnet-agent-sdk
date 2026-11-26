@@ -1,0 +1,73 @@
+{
+  "safety": {
+    "approvalPolicy": "on-request",
+    "sandboxMode": "workspace-write",
+    "execDefault": null,
+    "execRules": []
+  },
+  "contextCompression": {
+    "enabled": true,
+    "mode": "autonomous",
+    "trigger": { "fraction": 0.7 },
+    "keep": { "messages": 6, "maxTokens": 20000 },
+    "modelContextWindow": 262144,
+    "overheadTokens": 45000
+  },
+  "models": [
+    {
+      "id": "agent",
+      "type": "LlamaCpp",
+      "config": {
+        "model": "/path/to/models/Qwen3.8-27B-UD-Q4_K_XL.gguf",
+        "contextSize": 262144,
+        "gpuLayers": 30,
+        "mainGpu": 0,
+        "temperature": 0.2,
+        "maxTokens": 32768
+      }
+    },
+    {
+      "id": "claude",
+      "type": "Anthropic",
+      "config": {
+        "model": "claude-sonnet-5-5",
+        "maxTokens": 16000,
+        "effort": "high",
+        "contextWindow": 1000000
+      }
+    },
+    {
+      "id": "openai",
+      "type": "OpenAI",
+      "config": { "model": "gpt-6-astra", "maxTokens": 16000, "effort": "high", "contextWindow": 1000000 }
+    },
+    {
+      "id": "azure-openai",
+      "type": "AzureOpenAI",
+      "config": { "model": "gpt-6-astra", "maxTokens": 16000, "effort": "high", "contextWindow": 1000000 }
+    },
+    {
+      "id": "bedrock",
+      "type": "Bedrock",
+      "config": { "model": "global.anthropic.claude-sonnet-5-5", "region": "us-east-1", "maxTokens": 16000, "contextWindow": 1000000 }
+    },
+    {
+      "id": "lan-qwen",
+      "type": "OpenAICompatible",
+      "config": { "model": "unsloth/Qwen3.8", "serverUrl": "http://llmserver.local:8001/v1/", "maxTokens": 16384, "contextWindow": 262144, "inputModalities": ["text", "image"] }
+    },
+    {
+      "id": "gemini",
+      "type": "Gemini",
+      "config": { "model": "gemini-3.6-flash", "maxTokens": 16000, "effort": "high", "contextWindow": 1000000 }
+    }
+  ],
+  "skills": { "enabled": true, "skillsPath": "skills" },
+  "verify": { "enabled": true, "maxAttempts": 2, "timeoutMs": 60000 },
+  "guard": {
+    "enabled": true,
+    "maxToolArgsKb": 64,
+    "maxToolCalls": 0,
+    "artifact": null
+  }
+}

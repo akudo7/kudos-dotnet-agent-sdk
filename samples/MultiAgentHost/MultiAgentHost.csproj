@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Kudos.Agent.Sdk" Version="0.6.0" />
+    <PackageReference Include="Kudos.Agent.Sdk.LlamaSharp" Version="0.6.0" />
+    <PackageReference Include="Kudos.Agent.Sdk.Providers" Version="0.6.0" />
+    <PackageReference Include="Kudos.Agent.Sdk.Workflows" Version="0.6.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="LLamaSharp.Backend.Cuda13" Version="0.30.0" />
+  </ItemGroup>
+
+</Project>

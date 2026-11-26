@@ -1,0 +1,95 @@
+{
+  "safety": {
+    "approvalPolicy": "never",
+    "sandboxMode": "workspace-write",
+    "execDefault": "allow",
+    "execRules": [
+      {
+        "prefix": [
+          "rm"
+        ],
+        "effect": "ask"
+      },
+      {
+        "prefix": [
+          "rmdir"
+        ],
+        "effect": "ask"
+      }
+    ]
+  },
+  "contextCompression": {
+    "enabled": true,
+    "mode": "autonomous",
+    "trigger": {
+      "fraction": 0.3
+    },
+    "keep": {
+      "messages": 6,
+      "maxTokens": 20000
+    },
+    "modelContextWindow": 262144,
+    "overheadTokens": 45000
+  },
+  "models": [
+    {
+      "id": "agent",
+      "type": "LlamaCpp",
+      "config": {
+        "model": "/path/to/models/Qwen3.8-27B-UD-Q4_K_XL.gguf",
+        "contextSize": 262144,
+        "gpuLayers": 30,
+        "mainGpu": 0,
+        "temperature": 0.2,
+        "maxTokens": 16384
+      }
+    },
+    {
+      "id": "lan-qwen",
+      "type": "OpenAICompatible",
+      "config": {
+        "model": "unsloth/Qwen3.8-27B",
+        "serverUrl": "http://llmserver.local:8001/v1/",
+        "maxTokens": 16384,
+        "contextWindow": 262144,
+        "maxRetries": 1
+      }
+    }
+  ],
+  "skills": {
+    "enabled": true,
+    "skillsPath": "skills"
+  },
+  "verify": {
+    "enabled": false,
+    "maxAttempts": 2,
+    "timeoutMs": 60000
+  },
+  "guard": {
+    "enabled": true,
+    "maxToolArgsKb": 64,
+    "maxToolCalls": 0,
+    "artifact": null
+  },
+  "runner": {
+    "pretest": {
+      "timeoutSeconds": 1800,
+      "minRolloutLines": 5,
+      "heartbeatSeconds": 60,
+      "enabled": false
+    },
+    "pace": {
+      "slowFraction": 0.5
+    },
+    "monitor": {
+      "hangMinutes": 15
+    },
+    "loop": {
+      "maxAttempts": 3,
+      "verifyTimeoutMinutes": 45
+    },
+    "test": {
+      "durationMinutes": 30
+    }
+  }
+}
