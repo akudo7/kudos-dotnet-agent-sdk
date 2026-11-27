@@ -1,12 +1,12 @@
 # Kudos Agent SDK v0.6.0
 
-**An SDK for embedding an in-process AI coding agent into .NET applications**
+**Embed an AI coding agent *inside* your .NET application — it writes and runs code against your product's API, with a local model in your own process, and only after your user approves it.**
 
 [![An AI agent built on Kudos Agent SDK, running inside Autodesk Revit 2027: the approval card shows the C# code the agent wrote](pics/revit-agent-approval.png)](https://www.youtube.com/watch?v=132ZBmiiJ1g)
 
 **Demo video (YouTube):** https://www.youtube.com/watch?v=132ZBmiiJ1g — a local LLM writes Revit API C# code inside Revit, the user approves it, and the answer comes back as a table ([details](apps/revit/README.md))
 
-[Overview](#overview) · [Packages](#packages) · [Getting the Packages](#getting-the-packages) · [Quick Start](#quick-start) · [Demo](#demo) · [Documentation](#documentation) · [License](#license) · [Author](#author)
+[Overview](#overview) · [Multi-Agent and A2A](#multi-agent-and-a2a) · [Packages](#packages) · [Getting the Packages](#getting-the-packages) · [Quick Start](#quick-start) · [Demo](#demo) · [Documentation](#documentation) · [License](#license) · [Author](#author)
 
 ---
 
@@ -18,15 +18,44 @@ The core use case: an instruction goes in, the agent writes and runs a script, a
 
 ### Why Kudos Agent SDK?
 
-- **In-process local models** — LLaMASharp (llama.cpp GGUF) runs inside the host process, with incremental KV-cache reuse across turns
-- **Remote models (opt-in)** — Anthropic, OpenAI, Azure OpenAI, OpenAI-compatible, Amazon Bedrock and Google Gemini through each vendor's official SDK (`Microsoft.Extensions.AI` `IChatClient`)
-- **Microsoft Agent Framework** — the agent loop runs on `Microsoft.Agents.AI`
-- **Coding tools** — script execution, shell commands, file read / write / edit / patch, glob and grep search, a todo list, image viewing — or your own tools in place of them
-- **Approvals** — a safety gate with approval policies, sandbox modes and exec rules; operations that need approval go to your approval handler, and are denied when there is none
-- **Skills and MCP** — `SKILL.md` skills loaded on demand; MCP servers through the official C# SDK
-- **Long tasks** — handoff context compaction, loop guards, session records with resume and fork, a hash-chained audit log
-- **Images and PDFs** — attach files to a turn for models that accept them
-- **Multi-agent** — sub-agents as tools, and parallel or sequential workflows
+- **Runs inside your application** — the agent, and even the LLM, live in your process: no Python runtime, no sidecar server, and with a local model nothing leaves the machine. Proven inside Autodesk Revit 2027.
+- **Local models built for agent loops** — the in-process model keeps its KV cache across calls, so each step processes only what is new instead of the whole conversation. Several agents can share one loaded model, and speculative decoding speeds up generation.
+- **Your product's tools, your approval UI** — replace the built-in tools with your own API, send every approval to your own dialog, stream the agent's progress into your UI, and ship product knowledge as Markdown skills.
+- **Safe and auditable** — generated scripts never run without approval; approval policies, sandbox modes and command rules decide the rest. Every session is recorded, can be resumed or forked, and keeps a hash-chained audit log with secrets redacted.
+- **One codebase, any model** — switch between local GGUF models and Anthropic, OpenAI, Azure OpenAI, Amazon Bedrock or Google Gemini by configuration, or mix them, such as a local agent with a cloud reviewer.
+
+### Where It Fits
+
+- **CAD, BIM and engineering tools** — ask about the open model and get a table back; the agent writes code against the product's API ([Revit demo](#demo))
+- **Desktop data and analysis applications** — users query and transform their own data in plain language, without exporting it
+- **Internal business applications** — multi-step tasks over in-house systems through your own tools, every step approved and recorded
+- **Closed or regulated environments** — a local model in your process keeps source data and prompts on the machine
+
+### What's Included
+
+- Agent loop on Microsoft Agent Framework (`Microsoft.Agents.AI`), remote models through each vendor's official SDK (`Microsoft.Extensions.AI` `IChatClient`)
+- Coding tools — script execution, shell commands, file read / write / edit / patch, glob and grep search, a todo list, image viewing
+- `SKILL.md` skills loaded on demand; MCP servers through the official C# SDK
+- Long tasks — context compaction, loop guards, a verify gate on the final answer
+- Images and PDFs attached to a turn, for models that accept them
+- Multi-agent — sub-agents as tools, swarm-style parallel sub-agents, fan-out / fan-in and sequential workflows, and A2A (preview) ([details](#multi-agent-and-a2a))
+
+---
+
+## Multi-Agent and A2A
+
+Several agents can share one task, inside one process or across processes:
+
+| Pattern | Who decides | How |
+|---|---|---|
+| **Sub-agents** | The parent's model | Each registered sub-agent becomes a tool `agent_<name>` (own model, prompts, skills or tools). Approvals go to the parent's handler, safety can only be narrowed, depth is limited. |
+| **Swarm-style parallel sub-agents** | The parent's model | Several sub-agent calls in one response run at the same time (`subAgentPolicy.maxConcurrent`, default 3). With `allowSpawn`, the model writes the instructions of one-shot children itself (`spawn_agent`). |
+| **Fan-out / fan-in workflow** | Your host | `AgentWorkflows.Concurrent` sends the same input to every participant at once (at most `maxFanOut`, default 4) and an aggregator combines the answers; failed or timed-out participants are reported, not waited for. |
+| **Sequential workflow** | Your host | `AgentWorkflows.Sequential` — a pipeline where each participant gets the previous answer. A workflow can itself be registered as a sub-agent. |
+| **A2A client** | The model | Remote agents speaking the [A2A protocol](https://a2a-protocol.org) (v1.0) become tools `a2a_<name>`. |
+| **A2A server** | Other agents | A coding-agent session is served over A2A (HTTP+JSON and JSON-RPC, agent card, approvals, cancel, bearer-token auth, session records). |
+
+Workflows ship in `Kudos.Agent.Sdk.Workflows`. A2A is off by default and is not a NuGet package yet, because its Microsoft Agent Framework dependencies are preview releases — ask the [author](#author) if you need it. On an in-process local model, parallel agents share one model and take turns unless it is loaded with several sequences (`seqMax` > 1); remote models and llama-server run them in parallel. See [docs/MULTI-AGENT.md](docs/MULTI-AGENT.md) and [docs/A2A.md](docs/A2A.md).
 
 ---
 
@@ -93,7 +122,9 @@ An application built on the SDK: an AI agent add-in **inside Autodesk Revit 2027
 - **[docs/SKILLS-GUIDE.md](docs/SKILLS-GUIDE.md)** — the `SKILL.md` format and discovery
 - **[docs/SESSIONS.md](docs/SESSIONS.md)** — session records, resume and fork, compaction, loop guards
 - **[docs/ATTACHMENTS.md](docs/ATTACHMENTS.md)** — images and PDFs
-- **[docs/MULTI-AGENT.md](docs/MULTI-AGENT.md)** — sub-agents and workflows
+- **[docs/MULTI-AGENT.md](docs/MULTI-AGENT.md)** — sub-agents, parallel sub-agents and fan-out / fan-in or sequential workflows
+- **[docs/A2A.md](docs/A2A.md)** — Agent2Agent: remote agents as tools, serving a session over A2A
+- **[docs/KV-CACHE.md](docs/KV-CACHE.md)** — KV-cache reuse for in-process models
 - **[docs/SECRETS.md](docs/SECRETS.md)** — API keys and the OS secret store
 - **[docs/LICENSING.md](docs/LICENSING.md)** — License Keys
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — package split, components, extension points
