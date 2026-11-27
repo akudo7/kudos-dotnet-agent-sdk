@@ -63,7 +63,7 @@ A variant is `Failed to load the native library. Please check the log for more i
 
 **Cause**: `Kudos.Agent.Sdk.LlamaSharp` depends on `LLamaSharp` 0.30.0 but deliberately ships no native
 backend. Either none is referenced, the wrong one is referenced for the machine, or a native dependency
-(CUDA runtime, driver) is missing.
+(CUDA runtime, driver — on Windows also the Visual C++ runtime) is missing.
 
 **Solution**:
 
@@ -76,6 +76,13 @@ backend. Either none is referenced, the wrong one is referenced for the machine,
   On a machine without an NVIDIA GPU use `LLamaSharp.Backend.Cpu`.
 - Check that the native files were copied to the output folder (`runtimes/<rid>/native/...`) and that their
   dependencies resolve (`ldd` on Linux, `dumpbin /dependents` on Windows).
+- **Windows**: install the Microsoft Visual C++ 2015-2022 Redistributable (x64). `llama.dll` and `ggml*.dll` import
+  `MSVCP140.dll`, `VCRUNTIME140.dll`, `VCRUNTIME140_1.dll` and the OpenMP runtime `VCOMP140.DLL`, none of which a
+  clean Windows install has (the CPU backend fails the same way as a CUDA one). An application that embeds the SDK
+  should install the redistributable or list it as a prerequisite.
+- **Plug-ins** (the SDK loaded into another application's process): the process base directory is the host
+  application's folder, so the default search can miss the plug-in's `runtimes/` folder. Call
+  `LLama.Native.NativeLibraryConfig.All.WithSearchDirectory(<plug-in folder>)` before the first model is created.
 
 See [MODELS.md](MODELS.md) for backend selection.
 
@@ -121,10 +128,14 @@ context on such a model would crash the process, so loading stops before creatin
 
 ### `ContextOverflowException` on the first or a later call
 
+A variant (from LLaMASharp, reported as a failed turn): `The context window is full and the current strategy is
+set to ThrowException. To automatically truncate and manage context, set InferenceParams.OverflowStrategy to
+ContextOverflowStrategy.TruncateAndReprefill.` — do not change the overflow strategy; the cause is the same.
+
 **Cause**: the rendered prompt is longer than the `contextSize` the model was loaded with.
 `StatefulLlamaExecutor` throws before decoding instead of letting native decoding hit the context boundary.
 The default `contextSize` is only **4096**, which leaves no room for the built-in system prompt (about 26 KB
-of text) plus the tool definitions.
+of text) plus the tool definitions — even **8192** overflows on the first turn.
 
 **Solution**: set `contextSize` to what the model and your VRAM support (for example 32768 or more), and set
 the compression window to the same value so compaction runs before the limit

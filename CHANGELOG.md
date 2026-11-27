@@ -5,6 +5,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
 
 ## [Unreleased]
 
+### Added
+
+- Docs: on Windows, local models need the Visual C++ 2015-2022 x64 runtime; `contextSize` must be 32,768 or more; plug-ins point LLaMASharp at their folder ([requirements](docs/QUICK-START.md#requirements), [troubleshooting](docs/TROUBLESHOOTING.md#the-native-library-cannot-be-correctly-loaded)).
+
 ## [0.6.0] - 2026-11-26
 
 ### Added

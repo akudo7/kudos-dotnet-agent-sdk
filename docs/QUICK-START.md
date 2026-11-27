@@ -61,6 +61,8 @@ dotnet add package LLamaSharp.Backend.Cpu --version 0.30.0        # ...plus ONE 
 
 - **.NET SDK 10** (the packages target `net10.0` only — a `net8.0` application cannot reference them).
 - **Local models** (`Kudos.Agent.Sdk.LlamaSharp`): your application references exactly one LLamaSharp native backend of the same version as LLamaSharp (`0.30.0`) — `LLamaSharp.Backend.Cpu`, `LLamaSharp.Backend.Cuda12` or `LLamaSharp.Backend.Cuda13`. The SDK does not pick one for you. The model runs inside your process, so size the GGUF model and context for your application's memory.
+  - **Windows**: the native libraries need the **Microsoft Visual C++ 2015-2022 Redistributable (x64)** — `MSVCP140.dll`, `VCRUNTIME140.dll`, `VCRUNTIME140_1.dll` and the OpenMP runtime `VCOMP140.DLL`. A clean Windows install does not have it; install it with your application (or require it as a prerequisite), otherwise the first model call fails with "The native library cannot be correctly loaded" ([TROUBLESHOOTING.md](TROUBLESHOOTING.md#the-native-library-cannot-be-correctly-loaded)).
+  - **Context size**: the built-in system prompt and tool definitions alone need more than 8,192 tokens, and `contextSize` defaults to 4,096 — set it to 32,768 or more ([TROUBLESHOOTING.md](TROUBLESHOOTING.md#contextoverflowexception-on-the-first-or-a-later-call)).
 - **Built-in tools** call external programs:
   - `bash_command` and `execute_code` (bash) run through the shell in `ToolContext.Shell` — `/bin/bash -c <command>` by default. On other platforms, replace it with `ConfigureToolContext` (see [API.md](API.md#toolcontext)).
   - `execute_code` (python) runs `python3`.
