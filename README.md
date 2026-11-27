@@ -6,7 +6,7 @@
 
 **Demo video (YouTube):** https://www.youtube.com/watch?v=132ZBmiiJ1g — a local LLM writes Revit API C# code inside Revit, the user approves it, and the answer comes back as a table ([details](apps/revit/README.md))
 
-[Overview](#overview) · [Multi-Agent and A2A](#multi-agent-and-a2a) · [Packages](#packages) · [Getting the Packages](#getting-the-packages) · [Quick Start](#quick-start) · [Demo](#demo) · [Documentation](#documentation) · [License](#license) · [Author](#author)
+[Overview](#overview) · [In-Process Model Engine](#in-process-model-engine) · [Multi-Agent and A2A](#multi-agent-and-a2a) · [Packages](#packages) · [Getting the Packages](#getting-the-packages) · [Quick Start](#quick-start) · [Demo](#demo) · [Documentation](#documentation) · [License](#license) · [Author](#author)
 
 ---
 
@@ -19,7 +19,7 @@ The core use case: an instruction goes in, the agent writes and runs a script, a
 ### Why Kudos Agent SDK?
 
 - **Runs inside your application** — the agent, and even the LLM, live in your process: no Python runtime, no sidecar server, and with a local model nothing leaves the machine. Proven inside Autodesk Revit 2027.
-- **Local models built for agent loops** — the in-process model keeps its KV cache across calls, so each step processes only what is new instead of the whole conversation. Several agents can share one loaded model, and speculative decoding speeds up generation.
+- **A local-model engine built for agents** — the SDK's own executor on top of LLaMASharp reuses the KV cache across calls, runs MTP speculative decoding with the model's own prediction head, and serves several agents from one loaded model ([details](#in-process-model-engine)).
 - **Your product's tools, your approval UI** — replace the built-in tools with your own API, send every approval to your own dialog, stream the agent's progress into your UI, and ship product knowledge as Markdown skills.
 - **Safe and auditable** — generated scripts never run without approval; approval policies, sandbox modes and command rules decide the rest. Every session is recorded, can be resumed or forked, and keeps a hash-chained audit log with secrets redacted.
 - **One codebase, any model** — switch between local GGUF models and Anthropic, OpenAI, Azure OpenAI, Amazon Bedrock or Google Gemini by configuration, or mix them, such as a local agent with a cloud reviewer.
@@ -39,6 +39,22 @@ The core use case: an instruction goes in, the agent writes and runs a script, a
 - Long tasks — context compaction, loop guards, a verify gate on the final answer
 - Images and PDFs attached to a turn, for models that accept them
 - Multi-agent — sub-agents as tools, swarm-style parallel sub-agents, fan-out / fan-in and sequential workflows, and A2A (preview) ([details](#multi-agent-and-a2a))
+
+---
+
+## In-Process Model Engine
+
+`Kudos.Agent.Sdk.LlamaSharp` does not just call LLaMASharp (llama.cpp). It adds its own executor, built for the way an agent talks to a model: many short calls over one growing conversation, often from several agents at once.
+
+| Feature | What it does |
+|---|---|
+| **Incremental KV-cache reuse** | Each model call decodes only what was appended since the previous one; the system prompt, tool definitions and earlier turns are not processed again. It also works with hybrid models whose recurrent state cannot be truncated, such as Qwen3.8. |
+| **MTP speculative decoding** | The model's own multi-token-prediction (MTP) head drafts the next token, and the main model checks it in the same step; a wrong draft is rolled back, recurrent state included. On automatically for models with an MTP head, and every output token is still the one the model itself samples. |
+| **Several agents on one model** | One loaded model serves several conversations as separate sequences, each with its own KV cache. Agents generating at the same time are decoded together in one batch, MTP included. |
+| **Images in the same cache** | With the model's image projector (`mmproj`), images from attachments and `view_image` enter the same incremental cache. |
+| **Tool calling for local models** | A Qwen-style prompt renderer and tool-call parser make a GGUF model a tool-using agent behind the standard `IChatClient`. |
+
+See [docs/MODELS.md](docs/MODELS.md) and [docs/KV-CACHE.md](docs/KV-CACHE.md).
 
 ---
 
