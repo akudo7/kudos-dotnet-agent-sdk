@@ -9,10 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Kudos.Agent.Sdk" Version="0.6.0" />
-    <PackageReference Include="Kudos.Agent.Sdk.LlamaSharp" Version="0.6.0" />
-    <PackageReference Include="Kudos.Agent.Sdk.Providers" Version="0.6.0" />
-    <PackageReference Include="Kudos.Agent.Sdk.Workflows" Version="0.6.0" />
+    <PackageReference Include="Kudos.Agent.Sdk" Version="0.7.0" />
+    <PackageReference Include="Kudos.Agent.Sdk.LlamaSharp" Version="0.7.0" />
+    <PackageReference Include="Kudos.Agent.Sdk.Providers" Version="0.7.0" />
+    <PackageReference Include="Kudos.Agent.Sdk.Workflows" Version="0.7.0" />
   </ItemGroup>
 
   <ItemGroup>

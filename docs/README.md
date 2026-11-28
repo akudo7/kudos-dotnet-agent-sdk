@@ -1,7 +1,7 @@
 # Kudos Agent SDK Documentation
 
 <p align="center">
-  <strong>Documentation for the Kudos Agent SDK v0.6.0 (target <code>net10.0</code>)</strong>
+  <strong>Documentation for the Kudos Agent SDK v0.7.0 (target <code>net10.0</code>)</strong>
 </p>
 
 <p align="center">

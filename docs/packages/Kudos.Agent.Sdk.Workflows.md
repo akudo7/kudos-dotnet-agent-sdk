@@ -1,4 +1,4 @@
-# Kudos.Agent.Sdk.Workflows v0.6.0
+# Kudos.Agent.Sdk.Workflows v0.7.0
 
 **Multi-agent workflows for the Kudos Agent SDK — several coding-agent sessions as one run**
 
@@ -35,7 +35,7 @@ Notes:
 ## Installation
 
 ```bash
-dotnet add package Kudos.Agent.Sdk.Workflows --version 0.6.0
+dotnet add package Kudos.Agent.Sdk.Workflows --version 0.7.0
 ```
 
 **Requirements:** .NET SDK 10 (target `net10.0`).

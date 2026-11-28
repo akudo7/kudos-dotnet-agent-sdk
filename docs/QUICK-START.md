@@ -10,7 +10,7 @@
 
 ## Installation
 
-The SDK ships as four NuGet packages (version `0.6.0`, target `net10.0`):
+The SDK ships as four NuGet packages (version `0.7.0`, target `net10.0`):
 
 | Package | Contents | When you need it |
 |---|---|---|
@@ -27,7 +27,7 @@ The packages are **not on nuget.org**. They are provided to evaluation and comme
 
 ```bash
 mkdir -p ~/.nuget/local-feeds/kudos-agent-sdk
-cp Kudos.Agent.Sdk*.0.6.0.nupkg ~/.nuget/local-feeds/kudos-agent-sdk/
+cp Kudos.Agent.Sdk*.0.7.0.nupkg ~/.nuget/local-feeds/kudos-agent-sdk/
 ```
 
 **2. Register the feed** — either globally:
@@ -50,10 +50,10 @@ or per solution, with a `nuget.config` next to your `.sln`:
 **3. Reference the packages** from your application:
 
 ```bash
-dotnet add package Kudos.Agent.Sdk --version 0.6.0
-dotnet add package Kudos.Agent.Sdk.Providers --version 0.6.0     # remote models
-dotnet add package Kudos.Agent.Sdk.LlamaSharp --version 0.6.0    # local models
-dotnet add package Kudos.Agent.Sdk.Workflows --version 0.6.0     # multi-agent workflows (optional)
+dotnet add package Kudos.Agent.Sdk --version 0.7.0
+dotnet add package Kudos.Agent.Sdk.Providers --version 0.7.0     # remote models
+dotnet add package Kudos.Agent.Sdk.LlamaSharp --version 0.7.0    # local models
+dotnet add package Kudos.Agent.Sdk.Workflows --version 0.7.0     # multi-agent workflows (optional)
 dotnet add package LLamaSharp.Backend.Cpu --version 0.30.0        # ...plus ONE native backend (see below)
 ```
 

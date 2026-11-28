@@ -1,4 +1,4 @@
-# Kudos.Agent.Sdk.Providers v0.6.0
+# Kudos.Agent.Sdk.Providers v0.7.0
 
 **Remote model APIs for the Kudos Agent SDK — each through its vendor's official .NET SDK**
 
@@ -36,7 +36,7 @@ Notes:
 ## Installation
 
 ```bash
-dotnet add package Kudos.Agent.Sdk.Providers --version 0.6.0
+dotnet add package Kudos.Agent.Sdk.Providers --version 0.7.0
 ```
 
 **Requirements:** .NET SDK 10 (target `net10.0`). Remote models need a License Key of level `professional` or higher ([LICENSING.md](../LICENSING.md)).

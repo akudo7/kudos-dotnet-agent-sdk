@@ -1,4 +1,4 @@
-# Kudos Agent SDK v0.6.0
+# Kudos Agent SDK v0.7.0
 
 **Embed an AI coding agent *inside* your .NET application — it writes and runs code against your product's API, with a local model in your own process, and only after your user approves it.**
 

@@ -15,7 +15,7 @@ working program see [QUICK-START.md](QUICK-START.md); for the public types see [
 
 ## Packages and Dependencies
 
-The SDK ships as four NuGet packages (version 0.6.0, each targeting `net10.0`). The split keeps
+The SDK ships as four NuGet packages (version 0.7.0, each targeting `net10.0`). The split keeps
 native runtimes, vendor SDKs and the workflow engine out of the core package: a host references only the packages it uses.
 
 | Package | Contents | Direct dependencies |

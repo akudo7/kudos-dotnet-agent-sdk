@@ -23,7 +23,7 @@ The core package `Kudos.Agent.Sdk` contains **no model client**. Two optional pa
 | `Kudos.Agent.Sdk.LlamaSharp` | `LlamaCpp` | Inside your process (LLamaSharp / llama.cpp). Prompts and files never leave the machine. |
 | `Kudos.Agent.Sdk.Providers` | `Anthropic`, `OpenAI`, `AzureOpenAI`, `OpenAICompatible`, `Bedrock`, `Gemini` | On a remote service, or a server you run. |
 
-All SDK packages are version 0.6.0 and target `net10.0`.
+All SDK packages are version 0.7.0 and target `net10.0`.
 
 > **Remote models send data off the machine.** With every type except `LlamaCpp`, the prompt is sent to the configured service. That includes the system prompt, the conversation, and tool results such as file contents and script output. `OpenAICompatible` on a loopback address (`localhost`, `127.0.0.1`, `::1`) is the only remote type that stays on the machine. Remote models are **opt-in**: keep a `LlamaCpp` entry as `models[0]`, select a remote entry explicitly (for example with `MODEL_ID`), and tell the user before you use it (see [Remote notice and credential check](#remote-notice-and-credential-check)).
 

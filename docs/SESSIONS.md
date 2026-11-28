@@ -82,9 +82,9 @@ milliseconds).
 | `model-item` | `role`, `content` | At turn end: each assistant message with visible text (protocol tags stripped). |
 | `tool-call` | `name`, `args` | At turn end: each tool call of the turn. |
 | `tool-result` | `name`, `content`, `isError`, `attachments` | At turn end: each tool result. `isError` is true for a `{"ok": false, ...}` result. A result with images (`view_image`, host tools) records its text in `content` and the images as `attachments` references. |
-| `safety-decision` | `operation`, `target`, `decision` (`auto-approve` / `ask-user` / `reject`), `rule` | Live, for every gate decision. |
+| `safety-decision` | `operation`, `target`, `decision` (`auto-approve` / `ask-user` / `reject`), `rule`, `detail` (what the operation carries — e.g. the code of an `execute_code` call; absent when none) | Live, for every gate decision — before the operation runs, so the code survives a crash while it runs. |
 | `human-intervention` | `approved`, `latencyMs`, `reason` | Live, when the approval handler answered. |
-| `compaction` | `summary`, `trigger` (`backstop` / `tool`), `outcome` (`summary` / `reset`), `compactedMessages`, `tokensBefore`, `tokensAfter`, `failureReason` | Live, when the context was compacted. |
+| `compaction` | `summary`, `trigger` (`backstop` / `tool` / `manual`), `outcome` (`summary` / `reset`), `compactedMessages`, `tokensBefore`, `tokensAfter`, `failureReason` | Live, when the context was compacted. |
 | `guard` | `kind`, `detail` | Live, when a guard fired (see [Loop guards](#loop-guards) and [Verify](#verify)). |
 | `turn-complete` | none | At the end of a successful turn. |
 | `turn-interrupted` | `reason` | When the host calls `RecordInterrupted(reason)` or cancels `RunTurnEventsAsync` (reason `cancelled`). |
@@ -96,8 +96,8 @@ milliseconds).
 | `workflow-end` | `workflow`, `runId`, `status` (`ok` / `partial` / `failed` / `cancelled`), `durationMs`, `missing`, `error` | Live, when the run ended. |
 | `a2a-call` | `agent`, `url`, `contextId`, `taskId`, `state` (`completed` / `input-required` / `failed` / `rejected` / `canceled` / `auth-required` / `message` / `denied` / `error`), `query` (2 000 characters), `chars`, `durationMs`, `error` | The session called a remote A2A agent through `a2a_<name>` ([A2A.md](A2A.md)). |
 | `a2a-task` | `taskId`, `contextId`, `state` (`submitted` / `working` / `input-required` / `completed` / `failed` / `canceled`), `requester` (`bearer` / `none`), `remote`, `depth`, `detail` | A state change of a task this session serves over A2A ([A2A.md](A2A.md)). |
-| `approval` | `tool`, `decision`, `reason` | Part of the schema and read on resume; the SDK does not write it in 0.6.0. |
-| `premature-termination` | `reason`, `autoRetry` | Part of the schema; the SDK does not write it in 0.6.0. |
+| `approval` | `tool`, `decision`, `reason` | Part of the schema and read on resume; the SDK does not write it in 0.7.0. |
+| `premature-termination` | `reason`, `autoRetry` | Part of the schema; the SDK does not write it in 0.7.0. |
 
 The MSAF tool loop is internal, so model and tool messages are not seen live. The session replays them
 from the difference between the history before and after the turn. Their `timestamp` is therefore the time
@@ -188,7 +188,7 @@ mechanisms: a deterministic **backstop**, the model's own **`compress_context`**
 
 | Key | Default | Meaning |
 |---|---|---|
-| `enabled` | `true` | Master switch. When false no compaction, no `compress_context`, no usage suffix. |
+| `enabled` | `true` | Automatic compaction. When false no backstop, no `compress_context`, no usage suffix. A host's `CompactAsync` still compacts ([Manual compaction](#manual-compaction)). |
 | `mode` | `autonomous` | `autonomous`, `handoff` or `backstop` (exact lowercase; anything else fails validation). |
 | `trigger.fraction` | `0.7` | Backstop fires when the estimate reaches this fraction of the effective window. Must be in (0, 1]. |
 | `keep.messages` | `6` | Most recent messages kept verbatim after a summary. |
@@ -211,7 +211,7 @@ Effective window = `max(modelContextWindow - overheadTokens, 1)`. With the defau
 | `handoff` | yes | registered | size + directive | included |
 | `backstop` | yes | not registered | size only | removed |
 
-In 0.6.0 `handoff` behaves exactly like `autonomous`; only `backstop` changes behaviour.
+In 0.7.0 `handoff` behaves exactly like `autonomous`; only `backstop` changes behaviour.
 
 ### Triggers
 
@@ -223,6 +223,8 @@ In 0.6.0 `handoff` behaves exactly like `autonomous`; only `backstop` changes be
   task.` The compaction runs before the next model call, with `trigger: "tool"`. If a compaction happened
   right before the step in which the model called it, the call is a no-op and says so. With compression
   disabled the tool returns `compress_context is not available (context compression is disabled)`.
+- **Manual.** The host calls `CompactAsync` between turns; the compaction runs at once, with `trigger: "manual"`.
+  See [Manual compaction](#manual-compaction).
 
 ### What a compaction does
 
@@ -246,6 +248,37 @@ In 0.6.0 `handoff` behaves exactly like `autonomous`; only `backstop` changes be
 
 During the turn the compacted view lives in `CompactingChatClient` (MSAF keeps its own uncompacted list). At
 turn end the session stores the compacted view, so the next turn starts from it. A failed turn discards it.
+
+### Manual compaction
+
+A host can compact the conversation now, between turns — for a `/compact` command, or when the user changes topic
+in a long conversation with a remote model (every call sends the whole history, so a shorter one costs less):
+
+```csharp
+var compaction = await session.CompactAsync("keep the decisions about the public API");   // the argument is optional
+if (compaction is null)
+{
+    Console.WriteLine("Nothing to compact.");   // one turn only, or the summary would not be smaller
+}
+else
+{
+    Console.WriteLine($"~{compaction.TokensBefore} → ~{compaction.TokensAfter} tokens ({compaction.Outcome})");
+}
+```
+
+- Everything before the latest turn (the last user message and what followed it — tool calls included) is summarized
+  as in steps 2–3 above and the stored history is replaced, so the next turn starts from the summary and the latest
+  turn. `keep.messages` is not used: it counts tool calls and results too, so on a short conversation it would keep
+  almost everything. The event has `trigger: "manual"`; it is returned, not surfaced as `AgentCompacted` (no turn is
+  running).
+- It never resets the conversation: when the summary cannot be written it throws `InvalidOperationException` (the
+  history is unchanged), and a summary that is not smaller than what it replaces is not applied (null).
+- The optional text is added to the summary request ("The user asked this summary to pay particular attention to: …").
+- It runs even when `contextCompression.enabled` is false — that switch is about automatic compaction.
+- It throws `InvalidOperationException` while a turn runs (call it between turns — queue it in a UI), and a turn
+  started while it runs throws the same exception. Cancelling it leaves the history unchanged and records nothing.
+- With an in-process model the next model call processes the whole (shorter) prompt again, as after any compaction.
+- The CLI REPL has `/compact [focus]`.
 
 ### Context-usage display
 
@@ -284,11 +317,16 @@ The `guard` section configures `GuardingChatClient`, which inspects every model 
 | Key | Default | Meaning |
 |---|---|---|
 | `enabled` | `true` | Turns the whole pipeline (including the verify gate) off when false. |
+| `retryOnCutoff` | `true` | Cutoff guard (below). `false` returns an answer cut off at the output limit as it is. |
 | `maxToolArgsKb` | `64` | Largest serialized tool-call argument size, in KB. Must be > 0. |
 | `maxToolCalls` | `0` | Total tool-call budget per session; 0 = off. Must be >= 0. |
 | `artifact` | `null` | File (relative to the work directory, or absolute) that must exist and be non-empty before a final answer is accepted. Null or empty = off. |
 
 ### What each guard detects and does
+
+The repeat breakers and the persistent counter count **per user turn**: a new message starts them over, so a loop
+stopped in one question does not stop the next question of the same session (a guard used on its own, outside
+`CodingAgentSession`, sees the whole message list). `maxToolCalls` stays a budget for the whole session.
 
 Repeat breakers nudge at 3 and abort at 5 (`RepeatBreakers.NudgeAt` / `AbortAt`). A **nudge** is a user
 message appended to a copy of the request for this call only. An **abort** sends one more request with
@@ -298,14 +336,15 @@ see the transcript above.`
 
 | Guard | Detects | Action | `guard` event `kind` |
 |---|---|---|---|
-| Call repeat | The same tool with the same arguments (sorted JSON) anywhere in the history | nudge at 3, abort at 5 | `repetition-breaker-nudge` / `-abort` |
+| Call repeat | The same tool with the same arguments (sorted JSON) anywhere in the current user turn | nudge at 3, abort at 5 | `repetition-breaker-nudge` / `-abort` |
 | Result repeat | N consecutive identical, non-empty tool results | nudge at 3, abort at 5 | `result-repeat-breaker-nudge` / `-abort` |
 | Command repeat | N consecutive `bash_command` calls that differ only in path-like arguments **and** return the same result | nudge at 3, abort at 5 | `command-repeat-breaker-nudge` / `-abort` |
 | Empty run | N consecutive empty results (blank, `(no output)`, separators only, empty `output`, or `count: 0`) | nudge at 3, abort at 5 | `empty-run-breaker-nudge` / `-abort` |
 | Empty result hint | The last result was empty (before the empty-run nudge applies) | one-line hint that an empty result is valid | `empty tool result-nudge` |
-| Persistent counter | Same call key 5 times across the whole session, counted so that compaction cannot reset it | abort | `repetition-breaker-abort` |
+| Persistent counter | Same call key 5 times within the current user turn, counted so that compaction cannot reset it | abort | `repetition-breaker-abort` |
 | Tool budget | Total tool calls reached `maxToolCalls` | abort | `tool-budget-abort` |
 | Argument size | A tool call whose serialized arguments exceed `maxToolArgsKb` | the call never reaches the tool; one re-invoke asking to split the work; a second oversized call ends the turn with an `[arg-size-guard] Stopped ...` text | `arg-size-guard`, `arg-size-guard-stop` |
+| Cutoff | A text answer cut off at the output limit (`FinishReason` `Length`): `maxTokens`, or — with a `LlamaCpp` model — a repetition loop ended early (`stopAfterRepeatedLines` / `stopAfterSameShapeToolCallLines` in [CONFIGURATION.md](CONFIGURATION.md)) | one re-invoke without the cut-off text (it never enters the history); a second cutoff ends the turn with a `[cutoff-guard] Stopped ...` text. Off with `retryOnCutoff: false` | `cutoff-guard`, `cutoff-guard-stop` |
 | Completion | A final answer while `artifact` is missing or empty | one re-invoke asking to write the file | `completion-guard` |
 | Single writer | At turn end, files under the work directory that changed or appeared but were not written by `write_file`, `edit_file` or `apply_patch` (only when the work directory is inside a git work tree) | warning only (logger + event); never fails the turn | `single-writer` |
 

@@ -5,9 +5,23 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-28
+
 ### Added
 
+- `guard.retryOnCutoff` (default `true`): `false` returns an answer cut off at the output limit as it is instead of retrying once — for hosts that prefer a partial long answer ([config](docs/CONFIGURATION.md)).
+- The `safety-decision` rollout event carries the operation's `detail` (e.g. the code of an `execute_code` call), written before it runs, so the code survives a host crash while it runs ([events](docs/SESSIONS.md)).
+- `CodingAgentSession.CompactAsync(instructions?)` summarizes everything before the latest turn, now (`trigger: "manual"`, tokens before / after), also when automatic compaction is off, never by a reset; the CLI REPL has `/compact [focus]` ([manual compaction](docs/SESSIONS.md#manual-compaction)).
 - Docs: on Windows, local models need the Visual C++ 2015-2022 x64 runtime; `contextSize` must be 32,768 or more; plug-ins point LLaMASharp at their folder ([requirements](docs/QUICK-START.md#requirements), [troubleshooting](docs/TROUBLESHOOTING.md#the-native-library-cannot-be-correctly-loaded)).
+
+### Changed
+
+- The repeat breakers and the persistent repeat counter count per user turn, not per session: a loop stopped in one question no longer aborts every later question of the session; `guard.maxToolCalls` stays per session ([guards](docs/SESSIONS.md#what-each-guard-detects-and-does)).
+
+### Fixed
+
+- `LlamaCpp` models end a runaway repetition early (`stopAfterRepeatedLines`, default 12; opt-in `stopAfterSameShapeToolCallLines`), and an answer cut off at `maxTokens` is no longer the answer: one retry without it, then a short notice (`cutoff-guard` — [guards](docs/SESSIONS.md#loop-guards)).
+- A turn stopped by its cancellation token is recorded only as `turn-interrupted`: no `verify-fail` guard event for the empty answer a stopped local model returns, no `error` event; `RunTurnStreamingAsync` records the interruption itself ([API](docs/API.md#codingagentsession)).
 
 ## [0.6.0] - 2026-11-26
 

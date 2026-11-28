@@ -1,4 +1,4 @@
-# Kudos.Agent.Sdk.LlamaSharp v0.6.0
+# Kudos.Agent.Sdk.LlamaSharp v0.7.0
 
 **In-process local models for the Kudos Agent SDK — prompts and files never leave the machine**
 
@@ -37,7 +37,7 @@ Notes:
 Reference this package **and one LLamaSharp native backend** of your choice — this package does not pick one for you:
 
 ```bash
-dotnet add package Kudos.Agent.Sdk.LlamaSharp --version 0.6.0
+dotnet add package Kudos.Agent.Sdk.LlamaSharp --version 0.7.0
 dotnet add package LLamaSharp.Backend.Cpu --version 0.30.0       # CPU only
 # or: LLamaSharp.Backend.Cuda12 / LLamaSharp.Backend.Cuda13       # NVIDIA GPU
 ```

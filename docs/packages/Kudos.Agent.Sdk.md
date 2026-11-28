@@ -1,4 +1,4 @@
-# Kudos.Agent.Sdk v0.6.0
+# Kudos.Agent.Sdk v0.7.0
 
 **The core of the Kudos Agent SDK — an AI coding agent inside your .NET application**
 
@@ -43,6 +43,8 @@ Version 0.x: the API may still change between minor versions.
 
 All three take a `CancellationToken`, and each has an overload that attaches images or PDFs (`session.Attachments.ImportFile(path)` → `RunTurnAsync(text, [attachment])`). Attachments are checked by size and content, saved in the work directory and recorded by reference with their SHA-256; what is sent depends on the model's input modalities (`models[].config.inputModalities`; the in-process model takes images when its projector is set — `config.mmproj`).
 
+Between turns, `CompactAsync(instructions?)` compacts the conversation now (a `/compact` command): everything before the latest turn becomes a summary, also when automatic compaction is off. It returns the `CompactionEvent` (tokens before / after), or null when there is nothing to compact ([manual compaction](../SESSIONS.md#manual-compaction)).
+
 ### Built-In Tools
 
 `execute_code`, `bash_command`, `read_file`, `write_file`, `edit_file`, `apply_patch`, `glob_files`, `grep_search`, `write_todos`, `read_todos`, `load_skill`, `compress_context`, `view_image` (only for a model that takes images), plus `mcp_<server>_<tool>` for each configured MCP server, `agent_<name>` for each sub-agent, and `spawn_agent` when enabled.
@@ -60,9 +62,9 @@ Every session checks a License Key, offline, before anything is created (`Licens
 ## Installation
 
 ```bash
-dotnet add package Kudos.Agent.Sdk --version 0.6.0
-dotnet add package Kudos.Agent.Sdk.LlamaSharp --version 0.6.0   # local models (+ one LLamaSharp native backend)
-dotnet add package Kudos.Agent.Sdk.Providers --version 0.6.0    # remote models
+dotnet add package Kudos.Agent.Sdk --version 0.7.0
+dotnet add package Kudos.Agent.Sdk.LlamaSharp --version 0.7.0   # local models (+ one LLamaSharp native backend)
+dotnet add package Kudos.Agent.Sdk.Providers --version 0.7.0    # remote models
 ```
 
 **Requirements:** .NET SDK 10 (target `net10.0`). Every session needs a License Key (Evaluation or commercial): install it with `Host.Cli license set`, or add `.UseLicense(licenseText)` to the builder.
